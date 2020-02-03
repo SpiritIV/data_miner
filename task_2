@@ -1,1 +1,127 @@
+from bs4 import BeautifulSoup as bs
+import requests
+from pprint import pprint
+
+#Сайт SuperJobs
+main_link = 'https://superjob.ru'
+
+page = 1
+position = 'Главный+инженер'
+
+responce_sj = requests.get(main_link+f'/vacancy/search/?keywords={position}&page={page}&geo%5Bc%5D%5B0%5D=1')
+vacancies = []
+
+while responce_sj.ok:
+    vacancy_data = {}
+    responce_sj = requests.get(main_link+f'/vacancy/search/?keywords={position}&page={page}&geo%5Bc%5D%5B0%5D=1')
+    html_sj = bs(responce_sj.text, 'lxml')
+    current_page = html_sj.findAll('div', {'class':'_3syPg _3P0J7 _9_FPy'})
+    salary_min = ''
+    salary_max = ''
+    salary = []
+    for vacancy in current_page:
+        vacancy_name = vacancy.find('div', {'class':'_3mfro CuJz5 PlM3e _2JVkc _3LJqf'}).getText()
+        salary = vacancy.find('span', {'class':'_3mfro _2Wp8I f-test-text-company-item-salary PlM3e _2JVkc _2VHxz'}).getText()
+        j = 0
+        for k in salary:
+            if k == '\xa0':
+                k = ''
+            if k == '—':
+                j += 2
+                salary_min = salary_min + salary[len(salary) - 1: len(salary)]
+                salary_max = salary[j:len(salary) - 1] + salary[len(salary) - 1: len(salary)]
+                break
+            else:
+                salary_min = salary_min + k
+            j += 1
+
+        link = main_link + vacancy.find('div', {'class':'_2g1F-'}).findChild()['href']
+        link_to_page = ''
+        if vacancy.find('div', {'class':'_1Tocb'}):
+            link_to_page = vacancy.find('div', {'class':'_1Tocb'}).findChild()['href']
+
+        company = vacancy.find('div', {'class':'_1cFsi _3VUIu'}).findChild().getText()
+        place = vacancy.find('span', {'class':'_3mfro f-test-text-company-item-location _9fXTd _2JVkc _3e53o'}).findChildren()[1].getText()
+        break
+    vacancy_data['name'] = vacancy_name
+    vacancy_data['salary_min'] = salary_min
+    vacancy_data['salary_max'] = salary_max
+    vacancy_data['link_to_vacancy'] = link
+    vacancy_data['link_to_company'] = link_to_page
+    vacancy_data['name_of_company'] = company
+    vacancy_data['place_of_company'] = place
+    vacancies.append(vacancy_data)
+    page += 1
+    break
+
+#Сайт HeadHunter
+
+headers = {'User-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.97 Safari/537.36'}
+main_url_hh = 'https://hh.ru'
+
+
+#L_is_autosearch=false&area=1&clusters=true&enable_snippets=true&text=Главный+инженер&page=1
+#Определение параметров
+L_is_autosearch = 'false'
+area = 1
+clusters = 'true'
+enable_snippets = 'true'
+text = 'Главный+инженер'
+page = 0
+
+responce_hh = requests.get(main_url_hh + f'/search/vacancy?L_is_autosearch=false&area=1&clusters=true&enable_snippets=true&text=Главный+инженер&page={page}', headers=headers)
+
+
+#Head Hunter vacancies
+while responce_hh.ok:
+    vacancy_data = {}
+    responce_hh = requests.get(main_url_hh + f'/search/vacancy?L_is_autosearch=false&area=1&clusters=true&enable_snippets=true&text=Главный+инженер&page={page}', headers=headers)
+    html_hh = bs(responce_hh.text, 'lxml')
+    current_page = html_hh.find('div', {'class':'vacancy-serp'}).findChildren('div', {'class':'vacancy-serp-item__row vacancy-serp-item__row_header'})
+    salary_min = ''
+    salary_max = ''
+    salary = []
+
+    for vacancy in current_page:
+        vacancy_name = vacancy.find('div', {'class':'resume-search-item__name'}).getText()
+        salary = vacancy.findChild('div', {'class':'vacancy-serp-item__sidebar'}).getText()
+
+        j = 0
+
+        for k in salary:
+            if k == '\xa0':
+                k = ''
+            if k == '-':
+                j += 1
+                salary_min = salary_min + salary[len(salary) - 4: len(salary)]
+                salary_max = salary[j:len(salary) - 4] + salary[len(salary) - 4: len(salary)]
+                break
+            else:
+                salary_min = salary_min + k
+            j += 1
+        link = vacancy.find('div', {'class':'resume-search-item__name'}).findChildren()[1]['href']
+        link_to_page = ''
+
+
+        if vacancy.findParent().findChildren('div', {'class': 'vacancy-serp-item__sidebar'})[1].findChild():
+            link_to_page = main_url_hh + vacancy.findParent().findChildren('div', {'class': 'vacancy-serp-item__sidebar'})[1].findChild()['href']
+
+        company = vacancy.findParent().findChild('div', {'class': 'vacancy-serp-item__meta-info'}).getText()
+        place = vacancy.findParent().findChildren('div', {'class': 'vacancy-serp-item__meta-info'})[1].getText()
+
+
+        vacancy_data['name'] = vacancy_name
+        vacancy_data['salary_min'] = salary_min
+        vacancy_data['salary_max'] = salary_max
+        vacancy_data['link_to_vacancy'] = link
+        vacancy_data['link_to_company'] = link_to_page
+        vacancy_data['name_of_company'] = company
+        vacancy_data['place_of_company'] = place
+        vacancies.append(vacancy_data)
+        break
+    page += 1
+    break
+
+pprint(vacancies)
+
 
