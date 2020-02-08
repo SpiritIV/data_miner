@@ -1,0 +1,30 @@
+from pymongo import MongoClient
+from pprint import pprint
+
+client  = MongoClient('localhost',27017)
+db = client['vacancies']
+super_jobs = db.sj
+head_hunter = db.hh
+
+objects_sj = super_jobs.find()
+objects_hh = head_hunter.find()
+
+for item in vacancies_from_sj:
+    for obj in objects_sj:
+        if item['name'] != obj['name'] and item['name_of_company'] != obj['name_of_company']:
+            super_jobs.insert_one(item)
+
+for item in vacancies_from_hh:
+    for obj in objects_hh:
+        if item['name'] != obj['name'] and item['name_of_company'] != obj['name_of_company']:
+            head_hunter.insert_one(item)
+
+sal = input('Введите минимальный размер заработной платы: ')
+result_sj = super_jobs.find({'salary_min':{'$gt':sal}})
+result_hh = head_hunter.find({'salary_min':{'$gt':sal}})
+
+for res in result_sj:
+    pprint(res)
+
+for res in result_hh:
+    pprint(res)
