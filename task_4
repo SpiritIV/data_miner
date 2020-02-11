@@ -1,0 +1,93 @@
+import datetime
+import requests
+from lxml import html
+from pprint import pprint
+
+header = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.87 Safari/537.36'}
+
+def request_to_yandex():
+    news_list = []
+    try:
+        response = requests.get('https://yandex.ru/news', headers=header)
+        root = html.fromstring(response.text)
+        result_name = root.xpath("//h2[@class='story__title']/a/text()")
+        print(result_name)
+        result_link = root.xpath("//h2[@class='story__title']/a/@href")
+        print(result_link)
+        result_source = root.xpath("//div[@class='story__date']/text()")
+        print(result_source)
+        for j, item in enumerate(result_source):
+            for i, letter in enumerate(item):
+                if letter == ':':
+                    result_source[j] = item[:i-2]
+                    break
+        result_date = datetime.datetime.today().strftime("%Y%m%d")
+        for i in range(len(result_name)):
+            news_data = {}
+            news_data['title'] = result_name[i]
+            news_data['link'] = 'https://yandex.ru' + result_link[i]
+            news_data['source'] = result_source[i]
+            news_data['date'] = result_date
+            news_list.append(news_data)
+        return news_list
+    except:
+        print('Информация не может быть получена!')
+
+def request_to_mail():
+    news_list = []
+    try:
+        response = requests.get('https://mail.ru/', headers=header)
+        root = html.fromstring(response.text)
+        result_name = root.xpath("//a[@class='svelte-1089u92']/text() | //a[@class='news-main i-link-no-deco svelte-1089u92 news-main_mqx_sm']//p[@class='i-link-deco svelte-1089u92']/text()")
+        result_link = root.xpath("//a[@class='svelte-1089u92']/@href | //a[@class='news-main i-link-no-deco svelte-1089u92 news-main_mqx_sm']//p[@class='i-link-deco svelte-1089u92']/@href")
+        result_source = 'mail.ru'
+        result_date = datetime.datetime.today().strftime("%Y%m%d")
+        for i in range(len(result_name)):
+            news_data = {}
+            news_data['title'] = result_name[i]
+            news_data['link'] = result_link[i]
+            news_data['source'] = result_source[i]
+            news_data['date'] = result_date
+            news_list.append(news_data)
+        return news_list
+    except:
+        print('Информация не может быть получена!')
+
+
+def request_to_lenta():
+    news_list = []
+    try:
+        response = requests.get('https://lenta.ru/', headers=header)
+        root = html.fromstring(response.text)
+        result_name = root.xpath("//div[@class='span4']/div[@class='item']/a/text()")
+        result_link = root.xpath("//div[@class='span4']/div[@class='item']/a/@href")
+        result_source = 'lenta.ru'
+        result_date = datetime.datetime.today().strftime("%Y%m%d")
+        for i in range(len(result_name)):
+            news_data = {}
+            news_data['title'] = result_name[i]
+            news_data['link'] = 'https://lenta.ru/' + result_link[i]
+            news_data['source'] = result_source[i]
+            news_data['date'] = result_date
+            news_list.append(news_data)
+        return news_list
+    except:
+        print('Информация не может быть получена!')
+
+result_yandex = request_to_yandex()
+result_lenta = request_to_lenta()
+result_mail = request_to_mail()
+
+
+from pymongo import MongoClient
+from pprint import pprint
+
+client  = MongoClient('localhost',27017)
+db = client['news']
+yandex_news = db.yn
+lenta_news = db.ln
+mail_news = db.mn
+
+yandex_news.insert_many(result_yandex)
+lenta_news.insert_many(result_lenta)
+mail_news.insert_many(result_mail)
