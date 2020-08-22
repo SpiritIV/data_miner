@@ -1,0 +1,47 @@
+import requests
+import json
+from pprint import pprint
+
+### Task 1.
+
+url = "https://api.github.com/users/SpiritIV/repos"
+
+response = requests.get(url)
+if response.ok:
+    data = json.loads(response.text)
+    with open(f'list_of_repositories.json', 'w') as file:
+         file.write(json.dumps(data))
+    i = 0
+    for d in data:
+        print(data[i]['name'])
+        i = i + 1;
+
+### Task 2.
+#http://ws.audioscrobbler.com/2.0/?method=user.getfriends&user=rj&api_key=YOUR_API_KEY&format=json
+url = "http://ws.audioscrobbler.com/2.0"
+
+api_key = ''
+method = 'auth.gettoken'
+user = ''
+format = 'json'
+params = {'method':method,
+          'api_key' : api_key,
+          'format': format}
+
+response = requests.get(url, params=params)
+if response.ok:
+    data = json.loads(response.text)
+    pprint(response.text)
+    token = data["token"]
+
+url ='http://www.last.fm/api/auth'
+params = {'api_key' : api_key,
+          'token': token}
+
+print(token)
+response = requests.get(url, params=params)
+
+if response.ok:
+    ##data = json.loads(response.text)
+    with open(f'auth.json', 'w') as file:
+        file.write(json.dumps(response.text))
